@@ -11,5 +11,7 @@ sudo python start.py checkpoints/cnnGesture15k_40epochs/ checkpoints/operation/
 command parameters description:<br>
 checkpoints/cnnGesture15k_40epochs/ is gesture checkpoints <br>
 checkpoints/operation/ is autoflight checkpoint<br>
-The reason I mix gesture and autoflight is I add a new cool feature which we can operate our drones with our hand signals.
+The reason I mix gesture and autoflight is I add a new cool feature which we can operate our drones with our hand signals.<br>
+If you wanna use that feature, please refer to my another project:<br>
+https://github.com/mingweihe/HandGestureRecognition
 <br>
