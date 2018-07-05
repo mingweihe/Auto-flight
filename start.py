@@ -16,6 +16,7 @@ import atexit
 import socket
 import sys
 import time
+import keyboard
 
 host = ''
 port = 9000
@@ -26,9 +27,11 @@ autoFlyCheckPeriod = 10
 
 #emergency check
 emergencyLand = 0
-emergencyCheckPeriod = 1
 
 test = 0
+
+# environment variables, prevent warning infor from tensorflow which caused by GPU
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 # Create a UDP socket
@@ -47,21 +50,6 @@ def recv():
         except Exception:
             print ('\nExit . . .\n')
             break
-
-def getKey():
-   fd = sys.stdin.fileno()
-   old = termios.tcgetattr(fd)
-   new = termios.tcgetattr(fd)
-   new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
-   new[6][termios.VMIN] = 1
-   new[6][termios.VTIME] = 0
-   termios.tcsetattr(fd, termios.TCSANOW, new)
-   key = None
-   try:
-      key = os.read(fd, 3)
-   finally:
-      termios.tcsetattr(fd, termios.TCSAFLUSH, old)
-   return key
 
 def sendMsg(msg):
     if 0 == msg:
@@ -94,7 +82,7 @@ def sendMsg(msg):
 
 def signalMode(gestureSession, prediction):
     global emergencyLand
-    if not emergencyLand:
+    if not emergencyLand and not gestureSession._closed:
         img_png = pyautogui.screenshot(region=(2206, 165, 648, 525))
         img_jpg = cv2.cvtColor(np.array(img_png), cv2.COLOR_RGBA2RGB)
         img_adj = cv2.resize(img_jpg, (0,0), fx=.571, fy=.571)
@@ -110,27 +98,31 @@ def signalMode(gestureSession, prediction):
             sendMsg(1)
         # autofly
         elif output[0] == 3:
-            print('intelligent flight mode is launching...')
-                # Intelligent mode's graph preparation:
-            print("Automatic flying data is initializing...")
-            sess.close()
-            # restore checkpoint
-            sessOpt = tf.Session()
-            saverOpt = tf.train.import_meta_graph(os.path.join(OPERATION_CHECKPOINTS_DIR, 'model.meta'))
-            saverOpt.restore(sessOpt, tf.train.latest_checkpoint(OPERATION_CHECKPOINTS_DIR))
-            predOpt = sessOpt.graph.get_tensor_by_name('prediction:0')
-            img_holder_opt = sessOpt.graph.get_tensor_by_name('image_holder:0')
-            print("Automatic flying data initialization is complte")
-            intelligentMode(sessOpt, predOpt, img_holder_opt)
-            print('intelligent flight mode has been successfully lauched.')
+            signalModelInitialize()
             return
         
         #Video analysize Thread
         threading.Timer(signalCheckPeriod, signalMode, [gestureSession, prediction]).start()
 
+def signalModelInitialize():
+    print()
+    print('intelligent flight mode is launching...')
+    print("Automatic flying data is initializing...")
+    sess.close()
+    # restore checkpoint
+    sessOpt = tf.Session()
+    saverOpt = tf.train.import_meta_graph(os.path.join(OPERATION_CHECKPOINTS_DIR, 'model.meta'))
+    saverOpt.restore(sessOpt, tf.train.latest_checkpoint(OPERATION_CHECKPOINTS_DIR))
+    predOpt = sessOpt.graph.get_tensor_by_name('prediction:0')
+    img_holder_opt = sessOpt.graph.get_tensor_by_name('image_holder:0')
+    print("Automatic flying data initialization is complte")
+    print('intelligent flight mode has been successfully lauched')
+    print()
+    intelligentMode(sessOpt, predOpt, img_holder_opt)
+
 def intelligentMode(sessOpt, predOpt, img_holder_opt):
     global emergencyLand
-    if not emergencyLand:
+    if not emergencyLand and not sessOpt._closed:
         img_png = pyautogui.screenshot(region=(2206, 165, 648, 525))
         img_jpg = cv2.cvtColor(np.array(img_png), cv2.COLOR_RGBA2GRAY)
         img_adj = cv2.resize(img_jpg, (0,0), fx=.571, fy=.571)
@@ -140,19 +132,14 @@ def intelligentMode(sessOpt, predOpt, img_holder_opt):
         sendMsg(output)
         threading.Timer(autoFlyCheckPeriod, intelligentMode, [sessOpt, predOpt, img_holder_opt]).start()
 
-def emergencyCheck():
+def key_press(key):
     global emergencyLand
-    msg=str(getKey())
-    if not msg:
-        threading.Timer(emergencyCheckPeriod, emergencyCheck).start()
-        return
-
-    if "b'q'" == msg or "b' '" == msg:
+    if "alt" == key.name:
+        signalModelInitialize()
+    if "right option" == key.name:
         emergencyLand = 1
         sendMsg(1)
         sock.close()
-        return
-    threading.Timer(emergencyCheckPeriod, emergencyCheck).start()
 
 if __name__ == '__main__':
     # % python train.py folder_name
@@ -166,6 +153,7 @@ if __name__ == '__main__':
     OPERATION_CHECKPOINTS_DIR = sys.argv[2]
 
     # Gesture recognition graph preparation:
+    print()
     print("Gesture recognition is initializing...")
     sess = tf.Session()
     saver = tf.train.import_meta_graph(os.path.join(GESTURE_CHECKPOINTS_DIR, 'model.meta'))
@@ -178,8 +166,10 @@ if __name__ == '__main__':
     predict = sess.graph.get_tensor_by_name('prediction:0')
     probabilities = sess.graph.get_tensor_by_name('probabilities:0')
     print("Gesture recognition initialization is complete")
+    keyboard.on_press(key_press)
+    print("Emergency protection launch is complete")
     print("Ready to fly:")
-
+    print()
     #connect to tello and ask for command
     sock.sendto('command'.encode(encoding="utf-8"), tello_address)
 
