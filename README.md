@@ -8,7 +8,7 @@ Training in jupyter<br>
 # Terminal command to start:<br>
 sudo python start.py checkpoints/gesture/ checkpoints/operation/
 <br>
-# command parameters description:<br>
+# parameters description:<br>
 "checkpoints/gesture/": gesture recognition checkpoint directory<br>
 "checkpoints/operation/": autoflight checkpoint directory<br>
 The reason I mix gesture and autoflight is adding a new cool feature which I can operate the drone with hand signals.<br>
