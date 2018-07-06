@@ -1,6 +1,3 @@
-# coding: utf-8
-
-# In[1]:
 import numpy as np
 import pyautogui
 import cv2
@@ -10,7 +7,6 @@ with warnings.catch_warnings():
     import tensorflow as tf
 import threading
 import os
-import termios
 import tty
 import atexit
 import socket
@@ -61,9 +57,9 @@ def sendMsg(msg):
     elif 3 == msg:
         msg = 'down 20'
     elif 4 == msg:
-        msg = 'cw 90'
-    elif 5 == msg:
         msg = 'ccw 90'
+    elif 5 == msg:
+        msg = 'cw 90'
     elif 6 == msg:
         msg = 'forward 20'
     elif 7 == msg:
@@ -82,32 +78,32 @@ def sendMsg(msg):
 
 def signalMode(gestureSession, prediction):
     global emergencyLand
-    if not emergencyLand and not gestureSession._closed:
+    if not emergencyLand:
         img_png = pyautogui.screenshot(region=(2206, 165, 648, 525))
         img_jpg = cv2.cvtColor(np.array(img_png), cv2.COLOR_RGBA2RGB)
         img_adj = cv2.resize(img_jpg, (0,0), fx=.571, fy=.571)
-
-        output = gestureSession.run(prediction, feed_dict = {img_holder: [img_adj], train:False})
-        print("prediction:", output[0])
-        # take off
-        # our test set is friendly for classifier(40epochs15k+) 2 and 4, so we change a little bit of the message.
-        if output[0] == 2:
-            sendMsg(0)
-        # land
-        elif output[0] == 4:
-            sendMsg(1)
-        # autofly
-        elif output[0] == 3:
-            signalModelInitialize()
-            return
+        if not gestureSession._closed:
+            output = gestureSession.run(prediction, feed_dict = {img_holder: [img_adj], train:False})
+            print("prediction:", output[0])
+            # take off
+            # our test set is friendly for classifier(40epochs15k+) 2 and 4, so we change a little bit of the message.
+            if output[0] == 2:
+                sendMsg(0)
+            # land
+            elif output[0] == 4:
+                sendMsg(1)
+            # autofly
+            elif output[0] == 3:
+                signalModelInitialize()
+                return
         
         #Video analysize Thread
         threading.Timer(signalCheckPeriod, signalMode, [gestureSession, prediction]).start()
 
 def signalModelInitialize():
     print()
-    print('intelligent flight mode is launching...')
-    print("Automatic flying data is initializing...")
+    print('Intelligent flight mode is initializing...')
+    print("Automatic flying data is installing...")
     sess.close()
     # restore checkpoint
     sessOpt = tf.Session()
@@ -115,8 +111,8 @@ def signalModelInitialize():
     saverOpt.restore(sessOpt, tf.train.latest_checkpoint(OPERATION_CHECKPOINTS_DIR))
     predOpt = sessOpt.graph.get_tensor_by_name('prediction:0')
     img_holder_opt = sessOpt.graph.get_tensor_by_name('image_holder:0')
-    print("Automatic flying data initialization is complte")
-    print('intelligent flight mode has been successfully lauched')
+    print("Automatic flying data installation complte")
+    print('Intelligent flight mode initialization complete')
     print()
     intelligentMode(sessOpt, predOpt, img_holder_opt)
 
@@ -127,9 +123,9 @@ def intelligentMode(sessOpt, predOpt, img_holder_opt):
         img_jpg = cv2.cvtColor(np.array(img_png), cv2.COLOR_RGBA2GRAY)
         img_adj = cv2.resize(img_jpg, (0,0), fx=.571, fy=.571)
 
-        output = sessOpt.run(predOpt, feed_dict = {img_holder_opt: [np.reshape(img_adj, [-1])]})[0]
-        print("prediction:", output)
-        sendMsg(output)
+        outputOpt = sessOpt.run(predOpt, feed_dict = {img_holder_opt: [np.reshape(img_adj, [-1])]})[0]
+        print("prediction:", outputOpt)
+        sendMsg(outputOpt)
         threading.Timer(autoFlyCheckPeriod, intelligentMode, [sessOpt, predOpt, img_holder_opt]).start()
 
 def key_press(key):
@@ -137,6 +133,7 @@ def key_press(key):
     if "alt" == key.name:
         signalModelInitialize()
     if "right option" == key.name:
+        print("Emergency landing...")
         emergencyLand = 1
         sendMsg(1)
         sock.close()
@@ -165,9 +162,10 @@ if __name__ == '__main__':
     train = sess.graph.get_tensor_by_name('train_bool:0')
     predict = sess.graph.get_tensor_by_name('prediction:0')
     probabilities = sess.graph.get_tensor_by_name('probabilities:0')
-    print("Gesture recognition initialization is complete")
+    print("Gesture recognition initialization complete")
+    print("Emergency protection is initializing...")
     keyboard.on_press(key_press)
-    print("Emergency protection launch is complete")
+    print("Emergency protection initialization complete")
     print("Ready to fly:")
     print()
     #connect to tello and ask for command
@@ -178,7 +176,3 @@ if __name__ == '__main__':
 
     #Video analysize Thread
     signalMode(sess, predict)
-
-    # In[7]:
-    # sess.close()
-
