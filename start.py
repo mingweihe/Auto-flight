@@ -43,7 +43,12 @@ def recv():
         try:
             data, server = sock.recvfrom(1518)
             print(data.decode(encoding="utf-8"))
-        except Exception:
+        except Exception as e:
+            errMsg = str(e)
+            if 'utf-8' in errMsg:
+                time.sleep(1)
+                continue
+            # print('\n', errMsg)
             print ('\nExit . . .\n')
             break
 
@@ -68,6 +73,12 @@ def sendMsg(msg):
         msg = 'left 20'
     elif 9 == msg:
         msg = 'right 20'
+    elif 100 == msg:
+        msg = 'battery?'
+    elif 101 == msg:
+        msg = 'speed?'
+    elif 102 == msg:
+        msg = 'time?'
     else:
         msg = None
     if msg is None:
@@ -76,6 +87,10 @@ def sendMsg(msg):
     sent = sock.sendto(msg.encode(encoding="utf-8"), tello_address)
     print("Tello: ", str(sent))
 
+def predParsing(predNum):
+    if predNum in [1,2,3,4,5]:
+        print('Signal', str(predNum), 'detected')
+        
 def signalMode(gestureSession, prediction):
     global emergencyLand
     if not emergencyLand:
@@ -84,9 +99,10 @@ def signalMode(gestureSession, prediction):
         img_adj = cv2.resize(img_jpg, (0,0), fx=.571, fy=.571)
         if not gestureSession._closed:
             output = gestureSession.run(prediction, feed_dict = {img_holder: [img_adj], train:False})
-            print("prediction:", output[0])
-            # take off
+            predParsing(output[0])
+            # operation based on hand signal/gesture
             # our test set is friendly for classifier(40epochs15k+) 2 and 4, so we change a little bit of the message.
+             # take off
             if output[0] == 2:
                 sendMsg(0)
             # land
@@ -132,11 +148,18 @@ def key_press(key):
     global emergencyLand
     if "alt" == key.name:
         signalModelInitialize()
-    if "right option" == key.name:
+    elif "right option" == key.name:
         print("Emergency landing...")
         emergencyLand = 1
         sendMsg(1)
         sock.close()
+    elif '[' == key.name:
+        sendMsg(100)
+    elif ']' == key.name:
+        sendMsg(101)
+    elif '\\' == key.name:
+        sendMsg(102)
+    
 
 if __name__ == '__main__':
     # % python train.py folder_name
@@ -163,16 +186,20 @@ if __name__ == '__main__':
     predict = sess.graph.get_tensor_by_name('prediction:0')
     probabilities = sess.graph.get_tensor_by_name('probabilities:0')
     print("Gesture recognition initialization complete")
+    print("Network connection is initializing...")
+    #recvThread create
+    threading.Thread(target=recv).start()
+    for i in range(2): time.sleep(1)
+    #connect to tello and ask for command
+    sock.sendto('command'.encode(encoding="utf-8"), tello_address)
+    for i in range(1): time.sleep(1)
+    print("Network connection complete")
     print("Emergency protection is initializing...")
     keyboard.on_press(key_press)
     print("Emergency protection initialization complete")
     print("Ready to fly:")
+    print("Please show signal command to Tello, or press keyboard command")
     print()
-    #connect to tello and ask for command
-    sock.sendto('command'.encode(encoding="utf-8"), tello_address)
-
-    #recvThread create
-    threading.Thread(target=recv).start()
 
     #Video analysize Thread
     signalMode(sess, predict)

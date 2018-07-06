@@ -29,7 +29,12 @@ def recv():
         try:
             data, server = sock.recvfrom(1518)
             print(data.decode(encoding="utf-8"))
-        except Exception:
+        except Exception as e:
+            errMsg = str(e)
+            if 'utf-8' in errMsg:
+                time.sleep(1)
+                continue
+            # print('\n', errMsg)
             print ('\nExit . . .\n')
             break
 
@@ -75,6 +80,12 @@ def key_press(key):
     elif '-' == msg:
         speed -= 10
         sendMsg('speed ' + str(speed))
+    elif '[' == msg:
+        sendMsg('battery?')
+    elif ']' == msg:
+        sendMsg('speed?')
+    elif '\\' == msg:
+        sendMsg('time?')
     elif 'q' == msg:
         sendMsg('land')
         sock.close()
@@ -85,18 +96,25 @@ if __name__ == '__main__':
         print('Usage: python', sys.argv[0], '[training_set_dir]')
         sys.exit(1)
     trainDir = sys.argv[1]
-    print ('\r\n\r\nTello is gonna to learn operations.\r\n')
-    print ('1: takeoff, 0: land.\r')
-    print ('w: up, s: down, a: cccw, d: cw.\r')
-    print ('▲: forward, ▼: back, ◀︎: left, ▶︎: right.\r')
-    print ('+: speed up, -: speed down.\r')
-    print ('This operation will taking photo through drone camera.\r')
-    print ('q -- quit demo.\r\n')
-
-    #recvThread create
-    recvThread = threading.Thread(target=recv)
-    recvThread.start()
+    print('Machine Learning is initializing...')
+    # initialize tello several seconds after socket connection created success
+    for i in range(2): time.sleep(1)
+    #connect to tello and ask for command
+    recvThread = threading.Thread(target=recv).start()
+    for i in range(2): time.sleep(1)
     sock.sendto('command'.encode(encoding="utf-8"), tello_address)
+    for i in range(1): time.sleep(1)
+    #recvThread create
+    print('Machine Learning initialization complete')
+    print()
+    print('1: takeoff, 0: land.\r')
+    print('w: up, s: down, a: cccw, d: cw.\r')
+    print('▲: forward, ▼: back, ◀︎: left, ▶︎: right.\r')
+    print('+: speed up, -: speed down.\r')
+    print('[: battery?, ]: speed?, \\: time?.\r')
+    print('This operation will taking photos through drone camera.\r')
+    print('q -- quit demo.\r\n')
 
     # keyboard monitering
     keyboard.on_press(key_press)
+    
