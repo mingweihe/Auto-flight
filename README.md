@@ -9,5 +9,5 @@ Training in jupyter<br>
 sudo python start.py checkpoints/gesture/ checkpoints/operation/
 <br>
 # parameters description:<br>
-"checkpoints/gesture/": gesture recognition checkpoint directory. (Detailed model refer to <a>href='https://github.com/mingweihe/HandGestureRecognition'>HandGestureRecognition</a>)<br>
+"checkpoints/gesture/": gesture recognition checkpoint directory. (Detailed model refer to <a href='https://github.com/mingweihe/HandGestureRecognition'>HandGestureRecognition</a>)<br>
 "checkpoints/operation/": autoflight checkpoint directory<br>
