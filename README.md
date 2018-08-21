@@ -1,4 +1,4 @@
-<h1>AutoFlight using Multiple Logistic Linear Regression</h1>
+<h1>Auto Flight using Multiple Logistic Linear Regression</h1>
 <h2>Run it with Terminal command:</h2>
 sudo python start.py checkpoints/gesture/ checkpoints/operation/<br>
 parameters description:<br>
