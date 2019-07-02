@@ -1,10 +1,9 @@
 <h1>Auto Flight using Multiple Logistic Linear Regression</h1>
 The purpose of this project is to teach Tello drone automatically flying. In other words, it's basically a project about image classification.<br>
 What is the functionality of my code?<br>
-1.Teach tello drone how to fly automatically.
-2.Calling tello python API.
-3.Connect encapsulated API with trained image classification model, which is also meant -- Auto-flight.
-<br>
+1.Teach tello drone how to fly automatically.<br>
+2.Calling tello python API.<br>
+3.Connect encapsulated API with trained image classification model, which is also meant -- Auto-flight.<br>
 <h2>Run it with Terminal command:</h2>
 sudo python start.py checkpoints/gesture/ checkpoints/operation/<br>
 parameters description:<br>
